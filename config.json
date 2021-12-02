@@ -1,0 +1,13 @@
+{
+  "GuildId": 884792741484179557,
+  "listeningChannel": 915744575308591227,
+  "channelMapping": {
+    "dml": 910486934411935784,
+    "la1": 910486593247252540,
+    "pa1": 897237752154841148,
+    "uos": 907700867120111666,
+    "tzp": 909933326406656071
+  },
+
+  "sourceLink": "https://github.com/stepech/ObfuscationBot"
+}
