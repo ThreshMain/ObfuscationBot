@@ -5,7 +5,7 @@ from discord.ext import commands
 import logging
 import re
 
-DEBUG = True
+DEBUG = False
 VERSION = "1.0-ALPHA-1"
 
 if DEBUG:
