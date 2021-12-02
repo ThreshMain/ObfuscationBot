@@ -2,6 +2,7 @@ import os
 from config import Config
 import discord
 from discord.ext import commands
+from discord.utils import escape_mentions
 import logging
 import re
 
@@ -64,12 +65,6 @@ async def on_message(msg: discord.Message):
         await msg.delete()
         return
 
-    if msg.mention_everyone:
-        myMessage: discord.Message = await msg.reply("Just don't try that you slut")
-        await msg.delete()
-        await myMessage.delete(delay=30)
-        return
-
     channels = await guild.fetch_channels()
 
     targetChannel: list[discord.TextChannel] = [channel for channel in channels if channel.id == config.channelMap.get(match.group(1))]
@@ -81,7 +76,7 @@ async def on_message(msg: discord.Message):
         webhook.append(await targetChannel[0].create_webhook(name=name))
 
     avatar = "https://cdn.discordapp.com/icons/914813122689241129/042d4c00a55cb2b2a8ef6d5db652b8df.png?size=96"
-    content = msg.content[4:]
+    content = escape_mentions(msg.content[4:])
     for attachment in msg.attachments:
         content += "\n" + attachment.url
     await webhook[0].send(content, avatar_url=avatar)
