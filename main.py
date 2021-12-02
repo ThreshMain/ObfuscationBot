@@ -6,7 +6,7 @@ import logging
 import re
 
 DEBUG = True
-VERSION = "dev"
+VERSION = "1.0-ALPHA-1"
 
 if DEBUG:
     loggingLevel = logging.INFO
