@@ -56,7 +56,7 @@ async def on_message(msg: discord.Message):
 
     match: re.Match = re.match(pattern, msg.content)
     if match is None or config.channelMap.get(match.group(1)) is None:
-        content = "Invalid taget channel, use prfixes like `dml:` or `uos:` to send message to corresponding channel"
+        content = "Invalid taget channel, use prefixes like `dml:` or `uos:` to send a message to the corresponding channel"
         content += "\n" + msg.content
         for attachment in msg.attachments:
             content += "\n" + attachment.url
