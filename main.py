@@ -6,7 +6,7 @@ import logging
 import re
 
 DEBUG = False
-VERSION = "1.0-ALPHA-1"
+VERSION = "DEV"
 
 if DEBUG:
     loggingLevel = logging.INFO
@@ -34,6 +34,7 @@ Momentálně podporuji:\n\
 `tzp:` pro #tzp\n\
 *Nezapomeň na dvoutečku*\n\n\
 Bot je momentálně ve verzi {1}, pokud se chceš zapojit do vývoje nebo nahlásit chybu, můžeš tak udělat na {2}"
+
 
 @bot.event
 async def on_ready():
