@@ -60,8 +60,6 @@ async def on_message(msg: discord.Message):
     if match is None or config.channelMap.get(match.group(1)) is None:
         content = "Invalid taget channel, use prefixes like `dml:` or `uos:` to send a message to the corresponding channel"
         content += "\n" + msg.content
-        for attachment in msg.attachments:
-            content += "\n" + attachment.url
         await msg.author.send(content)
         await msg.delete()
         return
@@ -78,9 +76,11 @@ async def on_message(msg: discord.Message):
 
     avatar = "https://cdn.discordapp.com/icons/914813122689241129/042d4c00a55cb2b2a8ef6d5db652b8df.png?size=96"
     content = escape_mentions(msg.content[4:])
+    files = []
     for attachment in msg.attachments:
-        content += "\n" + attachment.url
-    await webhook[0].send(content, avatar_url=avatar)
+        f = await attachment.to_file()
+        files.append(f)
+    await webhook[0].send(content, files=files, avatar_url=avatar)
     await msg.delete()
 
 
