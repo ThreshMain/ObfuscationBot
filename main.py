@@ -7,7 +7,7 @@ import logging
 import re
 
 DEBUG = False
-VERSION = "1.0-ALPHA-2"
+VERSION = "1.0-ALPHA.3"
 
 if DEBUG:
     loggingLevel = logging.INFO
@@ -24,17 +24,21 @@ pattern = re.compile("^(.{3}):", re.IGNORECASE)
 bot = commands.Bot(command_prefix="!", owner_id=470490558713036801, intents=discord.Intents.all())
 guild: discord.Guild
 
-welcome = "Ahoj, já jsem {0}, bot na anonymizaci zpráv.\n\
-Napiš do tohoto kanálu jakoukoliv zprávu začínající prefixem obashující kód předmětu a já do něj odešlu danou zprávu.\n\
-Zprávy mohou obsahovat obrázkové přílohy, soubory jako přílohy nebyly testovány.\n\
-Momentálně podporuji:\n\
-`dml:` pro #dml\n\
-`la1:` pro #la1\n\
-`pa1:` pro #pa1\n\
-`uos:` pro #uos\n\
-`tzp:` pro #tzp\n\
-*Nezapomeň na dvoutečku*\n\n\
-Bot je momentálně ve verzi {1}, pokud se chceš zapojit do vývoje nebo nahlásit chybu, můžeš tak udělat na {2}"
+welcome: discord.Embed = discord.Embed(colour=discord.Color.orange())
+welcome.title = "Obfuscation bot"
+welcome.url = config.sourceLink
+welcome.description = "Ahoj, tenhle bot anonymně přeposílá veškeré zprávy v tomto kanále do cílového kanálu tvé volby.\n\
+Zprávy mohou obsahovat přílohy."
+welcome.set_footer(text=VERSION)
+welcome.add_field(
+    name="Formát zprávy",
+    value="Zprávy potřebují prefix ve formátu kódu předmětu a dvojtečky.\nEg. `pa1:Špagetový kód je překrásný`",
+    inline=False)
+welcome.add_field(
+    name="Certifikace",
+    value="Certified by <@249093978975109122> to be `@everyone` impenetrable\n*RIP everyone who found out the hard way*",
+    inline=False
+)
 
 
 @bot.event
@@ -42,6 +46,9 @@ async def on_ready():
     logging.info("Joined as {0.name}".format(bot.user))
     global guild
     guild = await bot.fetch_guild(config.GuildId)
+    channel: discord.TextChannel = [channel for channel in await guild.fetch_channels() if channel.id == config.listeningChannel][0]
+    welcomeMessage: discord.Message = await channel.fetch_message(config.welcomeMessage)
+    await welcomeMessage.edit(content="", embed=welcome)
 
 
 @bot.event
@@ -51,17 +58,10 @@ async def on_message(msg: discord.Message):
     if msg.channel.id != config.listeningChannel and msg.channel.type != discord.ChannelType.private:
         return
 
-    if msg.content.startswith("updateWelcome") and await bot.is_owner(msg.author):
-        await msg.channel.delete_messages(await msg.channel.history(limit=20).flatten())
-        await updateWelcome(msg)
-        return
-
     match: re.Match = re.match(pattern, msg.content)
     if match is None or config.channelMap.get(match.group(1)) is None:
         content = "Invalid taget channel, use prefixes like `dml:` or `uos:` to send a message to the corresponding channel"
         content += "\n" + msg.content
-        for attachment in msg.attachments:
-            content += "\n" + attachment.url
         await msg.author.send(content)
         await msg.delete()
         return
@@ -78,13 +78,11 @@ async def on_message(msg: discord.Message):
 
     avatar = "https://cdn.discordapp.com/icons/914813122689241129/042d4c00a55cb2b2a8ef6d5db652b8df.png?size=96"
     content = escape_mentions(msg.content[4:])
+    files = []
     for attachment in msg.attachments:
-        content += "\n" + attachment.url
-    await webhook[0].send(content, avatar_url=avatar)
+        f = await attachment.to_file()
+        files.append(f)
+    await webhook[0].send(content, files=files, avatar_url=avatar)
     await msg.delete()
-
-
-async def updateWelcome(msg: discord.Message):
-    await msg.channel.send(welcome.format(bot.user.name, VERSION, config.sourceLink), embed=None)
 
 bot.run(token)
