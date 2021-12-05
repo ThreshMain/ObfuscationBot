@@ -8,6 +8,7 @@ class Config:
     listeningChannel: int
     sourceLink: str
     GuildId: int
+    welcomeMessage: int
 
     def __init__(self, logger: logging.Logger):
         with open("./config.json", 'r') as fp:
@@ -18,5 +19,6 @@ class Config:
         self.listeningChannel = procesInput["listeningChannel"]
         self.sourceLink = procesInput["sourceLink"]
         self.GuildId = procesInput["GuildId"]
+        self.welcomeMessage = procesInput["welcomeMessage"]
 
         logger.info("Loaded config")
