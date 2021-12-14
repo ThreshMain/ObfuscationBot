@@ -25,7 +25,7 @@ class InitExchange(View):
         if len(channel_list) == 0:
             overwrites = {
                 interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
-                self.bot.user: discord.PermissionOverwrite(read_messages=True, send_messages=True, manage_roles=True),
+                self.bot.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
                 interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=False)
             }
             new_channel = await interaction.guild.create_text_channel(
