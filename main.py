@@ -1,10 +1,11 @@
+import asyncio
 import os
 from config import Config
 import discord
 from discord.ext import commands
+from discord.utils import escape_mentions
 from interactions.InitExchangeButton import InitExchange
 import logging
-import re
 
 VERSION = "DEV"
 
@@ -13,7 +14,6 @@ logger = logging.getLogger('DiscordBot')
 
 config: Config = Config(logger)
 token: str = os.getenv("TOKEN")
-pattern = re.compile("^(.{3}):", re.IGNORECASE)
 
 bot = commands.Bot(command_prefix="!", owner_id=470490558713036801, intents=discord.Intents.all())
 guild: discord.Guild
@@ -23,12 +23,12 @@ def create_welcome_embed() -> discord.Embed:
     welcome_embed: discord.Embed = discord.Embed(colour=discord.Color.orange())
     welcome_embed.title = "Obfuscation bot"
     welcome_embed.url = config.sourceLink
-    welcome_embed.description = "Ahoj, tenhle bot anonymně přeposílá veškeré zprávy v tomto kanále do cílového kanálu tvé volby.\n\
+    welcome_embed.description = "Ahoj, tenhle bot anonymně přepošle zprávu do cílového kanálu tvé volby.\n\
     Zprávy mohou obsahovat přílohy."
     welcome_embed.set_footer(text=VERSION)
     welcome_embed.add_field(
-        name="Formát zprávy",
-        value="Zprávy potřebují prefix ve formátu kódu předmětu a dvojtečky.\nEg. `pa1:Špagetový kód je překrásný`",
+        name="Návod na použití",
+        value="Come on.. You don't need that...",
         inline=False)
     return welcome_embed
 
@@ -48,25 +48,29 @@ async def on_ready():
         await channel.send(embed=create_welcome_embed(),
                            view=InitExchange(config, bot))
 
-"""
+    expired_channels = [channel for channel in await guild.fetch_channels()
+                        if channel.category_id == config.hiddenCategoryId
+                        and channel.type != discord.ChannelType.category]
+    for channel in expired_channels:
+        await channel.delete()
+
+
 @bot.event
 async def on_message(msg: discord.Message):
     if msg.author.id == bot.user.id:
         return
-    if msg.channel.id != config.listeningChannel and msg.channel.type != discord.ChannelType.private:
+    if msg.channel.type != discord.ChannelType.text:
         return
-
-    match: re.Match = re.match(pattern, msg.content)
-    if match is None or config.channelMap.get(match.group(1)) is None:
-        content = "Invalid taget channel, use prefixes like `dml:` or `uos:` to send a message to the corresponding channel"
-        content += "\n" + msg.content
-        await msg.author.send(content)
-        await msg.delete()
+    if msg.channel.category_id != config.hiddenCategoryId:
         return
 
     channels = await guild.fetch_channels()
 
-    targetChannel: list[discord.TextChannel] = [channel for channel in channels if channel.id == config.channelMap.get(match.group(1))]
+    targetChannel: list[discord.TextChannel] = [channel for channel in channels if channel.name == msg.channel.topic]
+    if targetChannel is None:
+        logging.error("Didn't find channel {0}".format(msg.channel.topic))
+        await msg.reply("Sorka, nejakej error")
+        return
 
     webhook: list[discord.Webhook] = await targetChannel[0].webhooks()
 
@@ -75,13 +79,17 @@ async def on_message(msg: discord.Message):
         webhook.append(await targetChannel[0].create_webhook(name=name))
 
     avatar = "https://cdn.discordapp.com/icons/914813122689241129/042d4c00a55cb2b2a8ef6d5db652b8df.png?size=96"
-    content = escape_mentions(msg.content[4:])
+    content = escape_mentions(msg.content)
     files = []
     for attachment in msg.attachments:
         f = await attachment.to_file()
         files.append(f)
     await webhook[0].send(content, files=files, avatar_url=avatar)
-    await msg.delete()
-"""
+
+    overwrite = {msg.author: discord.PermissionOverwrite(send_messages=False)}
+    await msg.reply(content="Odesláno\nKanál se smaže za pár sekund :+1:", view=None)
+    await msg.channel.edit(topic="Deleting...", overwrites=overwrite)
+    await asyncio.sleep(10)
+    await msg.channel.delete()
 
 bot.run(token)
