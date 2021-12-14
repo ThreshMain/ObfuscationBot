@@ -4,21 +4,23 @@ import logging
 
 class Config:
 
-    channelMap: dict[str, int]
-    listeningChannel: int
     sourceLink: str
     GuildId: int
-    welcomeMessage: int
+    welcomeChannelId: int
+    welcomeMessageId: int
+    hiddenCategoryId: int
+    studyCategoryId: int
 
     def __init__(self, logger: logging.Logger):
         with open("./config.json", 'r') as fp:
             file = fp.read()
 
         procesInput = json.loads(file)
-        self.channelMap = procesInput["channelMapping"]
-        self.listeningChannel = procesInput["listeningChannel"]
         self.sourceLink = procesInput["sourceLink"]
         self.GuildId = procesInput["GuildId"]
-        self.welcomeMessage = procesInput["welcomeMessage"]
+        self.welcomeChannelId = procesInput["welcomeChannelId"]
+        self.welcomeMessageId = procesInput["welcomeMessageId"]
+        self.hiddenCategoryId = procesInput["hiddenCategoryId"]
+        self.studyCategoryId = procesInput["studyCategoryId"]
 
         logger.info("Loaded config")
