@@ -7,7 +7,7 @@ from discord.utils import escape_mentions
 from interactions.InitExchangeButton import InitExchange
 import logging
 
-VERSION = "DEV"
+VERSION = "1.0-ALPHA.4"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('DiscordBot')
