@@ -10,7 +10,10 @@ class CancelButton(Button):
         super().__init__(label="Zrušit", style=ButtonStyle.danger)
 
     async def callback(self, interaction: Interaction):
-        overwrite = {interaction.user: discord.PermissionOverwrite(send_messages=False)}
+        overwrite = {interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False,
+                                                                                 send_messages=False),
+                     interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+                     }
         await interaction.message.edit(content="Kanál se smaže za pár sekund", view=None)
         await interaction.channel.edit(topic="Deleting...", overwrites=overwrite)
         asyncio.create_task(self.delete(interaction.channel))
@@ -28,7 +31,9 @@ class RelayChannelSelection(Select):
         super().__init__(options=options)
 
     async def callback(self, interaction: Interaction):
-        overwrites = {interaction.user: discord.PermissionOverwrite(send_messages=True)}
+        overwrites = {
+            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
+            interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True)}
         await interaction.channel.edit(topic=self.values[0], overwrites=overwrites)
         edit_view = View()
         edit_view.add_item(CancelButton())
