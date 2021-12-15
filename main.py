@@ -86,7 +86,8 @@ async def on_message(msg: discord.Message):
         files.append(f)
     await webhook[0].send(content, files=files, avatar_url=avatar)
 
-    overwrite = {msg.author: discord.PermissionOverwrite(send_messages=False)}
+    overwrite = {msg.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
+        msg.author: discord.PermissionOverwrite(read_messages=True, send_messages=False)}
     await msg.reply(content="Odesláno\nKanál se smaže za pár sekund :+1:", view=None)
     await msg.channel.edit(topic="Deleting...", overwrites=overwrite)
     await asyncio.sleep(10)
