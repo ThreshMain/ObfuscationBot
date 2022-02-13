@@ -1,35 +1,46 @@
-import asyncio
+import configparser
 import os
-from config import Config
 import discord
 from discord.ext import commands
-from discord.utils import escape_mentions
-from interactions.InitExchangeButton import InitExchange
 import logging
+
+from modules.anonymizer import Anonymizer, InitExchange
+from modules.autopin import Autopin
 
 VERSION = "DEV"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('DiscordBot')
 
-config: Config = Config(logger)
 token: str = os.getenv("TOKEN")
 
 bot = commands.Bot(command_prefix="!", owner_id=470490558713036801, intents=discord.Intents.all())
 guild: discord.Guild
+config = configparser.ConfigParser()
+config.read("config.ini", "utf-8")
 
 
 def create_welcome_embed() -> discord.Embed:
     welcome_embed: discord.Embed = discord.Embed(colour=discord.Color.orange())
     welcome_embed.title = "Obfuscation bot"
-    welcome_embed.url = config.sourceLink
-    welcome_embed.description = "Ahoj, tenhle bot anonymně přepošle zprávu do cílového kanálu tvé volby.\n\
-    Zprávy mohou obsahovat přílohy."
+    welcome_embed.url = config.get("Global", "sourceLink")
+    welcome_embed.description = "Ahoj, tenhle bot slouží k naplnění různorodých náročných požadavků Lomohova na " \
+                                "kvalitu tohoto serveru." \
+                                "\n\nAktivní moduly:"
     welcome_embed.set_footer(text=VERSION)
-    welcome_embed.add_field(
-        name="Návod na použití",
-        value="Come on.. You don't need that...",
-        inline=False)
+    if config.getboolean("Anonymizer", "enabled"):
+        welcome_embed.add_field(
+            name="Anonymizer",
+            value="Přepošle anonymně zprávu. Mohou se přes to např. leakovat zadání. Což nepodporujeme. Samozřejmě. "
+                  "Ta feature tu je jen tak.",
+            inline=False)
+    if config.getboolean("Autopin", "enabled"):
+        welcome_embed.add_field(
+            name="Autopin",
+            value="Automaticky připne zprávu na které jsou více než " + config.get("Autopin", "threshold") + " "
+                  + config.get("Autopin", "emoji") + " reakce.",
+            inline=False
+        )
     return welcome_embed
 
 
@@ -37,60 +48,36 @@ def create_welcome_embed() -> discord.Embed:
 async def on_ready():
     logging.info("Joined as {0.name}".format(bot.user))
     global guild
-    guild = await bot.fetch_guild(config.GuildId)
-    channel: discord.TextChannel = [channel for channel in await guild.fetch_channels() if channel.id == config.welcomeChannelId][0]
+    guild = await bot.fetch_guild(config.getint("Global", "GuildId"))
+    channel: discord.TextChannel = \
+        [channel for channel in await guild.fetch_channels() if
+         channel.id == config.getint("Global", "welcomeChannelId")][0]
     try:
-        welcome_message: discord.Message = await channel.fetch_message(config.welcomeMessageId)
+        welcome_message: discord.Message = await channel.fetch_message(
+            config.getint("Global", "welcomeMessageId", fallback=0))
         await welcome_message.edit(content="",
                                    embed=create_welcome_embed(),
-                                   view=InitExchange(config, bot))
+                                   view=InitExchange(config, bot)
+                                   if config.getboolean("Anonymizer", "enabled") else None)
     except discord.NotFound:
-        await channel.send(embed=create_welcome_embed(),
-                           view=InitExchange(config, bot))
+        welcome_message = await channel.send(embed=create_welcome_embed(),
+                                             view=InitExchange(config, bot)
+                                             if config.getboolean("Anonymizer", "enabled") else None)
+        config["Global"]["welcomeMessageId"] = str(welcome_message.id)
+        with open("config.ini", 'w', encoding='utf-8') as file:
+            config.write(file)
 
     expired_channels = [channel for channel in await guild.fetch_channels()
-                        if channel.category_id == config.hiddenCategoryId
+                        if channel.category_id == config.getint("Anonymizer", "hiddenCategoryId")
                         and channel.type != discord.ChannelType.category]
     for channel in expired_channels:
         await channel.delete()
 
 
-@bot.event
-async def on_message(msg: discord.Message):
-    if msg.author.id == bot.user.id:
-        return
-    if msg.channel.type != discord.ChannelType.text:
-        return
-    if msg.channel.category_id != config.hiddenCategoryId:
-        return
-
-    channels = await guild.fetch_channels()
-
-    targetChannel: list[discord.TextChannel] = [channel for channel in channels if channel.name == msg.channel.topic]
-    if targetChannel is None:
-        logging.error("Didn't find channel {0}".format(msg.channel.topic))
-        await msg.reply("Sorka, nejakej error")
-        return
-
-    webhook: list[discord.Webhook] = await targetChannel[0].webhooks()
-
-    if len(webhook) == 0:
-        name = "Hello there"
-        webhook.append(await targetChannel[0].create_webhook(name=name))
-
-    avatar = "https://cdn.discordapp.com/icons/914813122689241129/042d4c00a55cb2b2a8ef6d5db652b8df.png?size=96"
-    content = escape_mentions(msg.content)
-    files = []
-    for attachment in msg.attachments:
-        f = await attachment.to_file()
-        files.append(f)
-    await webhook[0].send(content, files=files, avatar_url=avatar)
-
-    overwrite = {msg.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
-        msg.author: discord.PermissionOverwrite(read_messages=True, send_messages=False)}
-    await msg.reply(content="Odesláno\nKanál se smaže za pár sekund :+1:", view=None)
-    await msg.channel.edit(topic="Deleting...", overwrites=overwrite)
-    await asyncio.sleep(10)
-    await msg.channel.delete()
-
+if config.getboolean("Anonymizer", "enabled"):
+    logger.info("Enabling Anonymizer module")
+    bot.add_cog(Anonymizer(bot, logger, config))
+if config.getboolean("Autopin", "enabled"):
+    logger.info("Enabling Autopin module")
+    bot.add_cog(Autopin(bot, logger, config))
 bot.run(token)

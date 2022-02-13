@@ -1,1 +1,1 @@
-py-cord~=2.0.0a
+py-cord==2.0.0b4
