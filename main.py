@@ -20,6 +20,10 @@ config.read("config.ini", "utf-8")
 
 
 def create_welcome_embed() -> discord.Embed:
+    """
+    Creates embed used in welcome message
+    :return: DiscordEmbed used in the message
+    """
     welcome_embed: discord.Embed = discord.Embed(colour=discord.Color.green())
     welcome_embed.title = "Obfuscation bot"
     welcome_embed.description = "Ahoj, tenhle bot slouží k naplnění různorodých náročných požadavků Lomohova na " \
@@ -43,7 +47,10 @@ def create_welcome_embed() -> discord.Embed:
 
 
 @bot.event
-async def on_ready():
+async def on_ready() -> None:
+    """
+    Creates/updates welcome message. Deletes all channels in hiddencategory
+    """
     logging.info("Joined as {0.name}".format(bot.user))
     global guild
     guild = await bot.fetch_guild(config.getint("Global", "GuildId"))
@@ -72,6 +79,12 @@ async def on_ready():
                         and channel.type != discord.ChannelType.category]
     for channel in expired_channels:
         await channel.delete()
+
+
+@bot.event
+async def on_thread_join(thread: discord.Thread):
+    if config.getboolean("Global", "autojointhreads") and bot.user not in thread.members:
+        await thread.join()
 
 
 if config.getboolean("Anonymizer", "enabled"):

@@ -5,6 +5,9 @@ import discord
 
 
 class Autopin(discord.Cog):
+    """
+    Automatically pins message if certain reaction count is reached
+    """
     def __init__(self, bot: discord.Bot, logger: Logger, config: ConfigParser):
         self.bot = bot
         self.logger = logger

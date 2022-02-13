@@ -9,7 +9,23 @@ from discord.ui import View, Button, Select
 from discord.utils import escape_mentions
 
 
+async def delayed_channel_delete(channel: discord.TextChannel, delay: int) -> None:
+    """
+    Deletes channel after delay
+    :param channel: TextChannel to delete
+    :param delay: Delay in seconds
+    """
+    await asyncio.sleep(delay)
+    try:
+        await channel.delete()
+    except discord.NotFound:
+        pass
+
+
 class CancelButton(Button):
+    """
+    Cancel button used in hidden channel to cancel relay session
+    """
     def __init__(self):
         super().__init__(label="Zrušit", style=ButtonStyle.danger)
 
@@ -20,14 +36,13 @@ class CancelButton(Button):
                      }
         await interaction.message.edit(content="Kanál se smaže za pár sekund", view=None)
         await interaction.channel.edit(topic="Deleting...", overwrites=overwrite)
-        asyncio.create_task(self.delete(interaction.channel))
-
-    async def delete(self, channel: discord.TextChannel):
-        await asyncio.sleep(10)
-        await channel.delete()
+        asyncio.create_task(delayed_channel_delete(interaction.channel, 10))
 
 
 class RelayChannelSelection(Select):
+    """
+    Selection menu used in hidden channel to select target channel for relayed message
+    """
     def __init__(self, channels: list[discord.TextChannel]):
         options: Select.options = []
         for channel in channels:
@@ -49,6 +64,9 @@ class RelayChannelSelection(Select):
 
 
 class HiddenChannelMessageView(View):
+    """
+    Interaction menu presented in newly created hidden channel. Contains selection of targets and cancel button.
+    """
     def __init__(self, channel_list: list[discord.TextChannel]):
         super().__init__()
         self.add_item(RelayChannelSelection(channel_list))
@@ -56,6 +74,9 @@ class HiddenChannelMessageView(View):
 
 
 class InitExchange(Button):
+    """
+    Button used in welcome message to initialize relay session
+    """
     def __init__(self, config: ConfigParser, bot: discord.Bot) -> None:
         super().__init__(style=ButtonStyle.primary,
                          label="Let's go leak something",
@@ -93,7 +114,7 @@ class InitExchange(Button):
             await new_channel.send("Vyber si cílový kanál:", view=init_view)
 
             response_content = "Vytvořen kanál {0}.\nKanál se sám smaže za 10 minut".format(new_channel.mention)
-            asyncio.create_task(channel_timeout(new_channel))
+            asyncio.create_task(delayed_channel_delete(new_channel, 600))
 
         else:
             response_content = "Kanál vytvořený pro tebe již existuje: {0}".format(channel_list[0].mention)
@@ -101,15 +122,10 @@ class InitExchange(Button):
         await interaction.response.send_message(response_content, ephemeral=True)
 
 
-async def channel_timeout(channel: discord.TextChannel):
-    await asyncio.sleep(600)
-    try:
-        await channel.delete()
-    except discord.NotFound:
-        pass
-
-
 class Anonymizer(discord.Cog):
+    """
+    Listener class for activity in hidden channels
+    """
     guild: Guild
 
     def __init__(self, bot: discord.Bot, logger: Logger, config: ConfigParser):
