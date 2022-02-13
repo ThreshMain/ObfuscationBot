@@ -79,8 +79,9 @@ class InitExchange(Button):
     """
     def __init__(self, config: ConfigParser, bot: discord.Bot) -> None:
         super().__init__(style=ButtonStyle.primary,
-                         label="Let's go leak something",
-                         custom_id="init_exchange")
+                         label="Odeslat anonymní zprávu",
+                         custom_id="init_exchange",
+                         emoji="😏")
         self.hidden_category_id: int = config.getint("Anonymizer", "hiddenCategoryId")
         self.study_category_id: int = config.getint("Anonymizer", "studyCategoryId")
         self.welcome_channel_id: int = config.getint("Global", "welcomeChannelId")

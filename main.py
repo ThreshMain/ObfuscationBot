@@ -34,7 +34,7 @@ def create_welcome_embed() -> discord.Embed:
         welcome_embed.add_field(
             name="Anonymizer",
             value="Přepošle zprávu plně anonymně. Mohou se přes to např. leakovat zadání. Což nepodporujeme. "
-                  "Samozřejmě. Ta feature tu je jen tak. Výměnu zahájíte stisknutím tlačítka.",
+                  "Samozřejmě. Ta feature tu je jen tak.",
             inline=False)
     if config.getboolean("Autopin", "enabled"):
         welcome_embed.add_field(
