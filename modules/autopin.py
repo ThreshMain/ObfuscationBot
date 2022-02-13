@@ -45,7 +45,7 @@ class Autopin(discord.Cog):
         else:
             threshold = self.threshold
 
-        reactions: list = [reaction for reaction in message.reactions if reaction.emoji == self.emoji]
+        reaction: discord.Reaction = [reaction for reaction in message.reactions if reaction.emoji == self.emoji][0]
 
-        if len(reactions) >= threshold:
+        if reaction.count >= threshold:
             await message.pin()
