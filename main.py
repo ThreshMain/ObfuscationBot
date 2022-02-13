@@ -1,7 +1,6 @@
 import configparser
 import os
 import discord
-from discord.ext import commands
 import logging
 
 from modules.anonymizer import Anonymizer, InitExchange
@@ -14,7 +13,7 @@ logger = logging.getLogger('DiscordBot')
 
 token: str = os.getenv("TOKEN")
 
-bot = commands.Bot(command_prefix="!", owner_id=470490558713036801, intents=discord.Intents.all())
+bot = discord.Bot(owner_id=470490558713036801, intents=discord.Intents.all())
 guild: discord.Guild
 config = configparser.ConfigParser()
 config.read("config.ini", "utf-8")
