@@ -6,7 +6,7 @@ import logging
 from modules.anonymizer import Anonymizer, InitExchange
 from modules.autopin import Autopin
 
-VERSION = "v1.0-BETA.1"
+VERSION = "DEV"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('DiscordBot')
