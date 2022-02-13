@@ -5,7 +5,7 @@ from logging import Logger
 
 import discord
 from discord import Guild, ButtonStyle, Interaction
-from discord.ui import View, button, Button, Select
+from discord.ui import View, Button, Select
 from discord.utils import escape_mentions
 
 
@@ -38,7 +38,10 @@ class RelayChannelSelection(Select):
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True)}
-        await interaction.channel.edit(topic=self.values[0], overwrites=overwrites)
+        try:
+            await interaction.channel.edit(topic=self.values[0], overwrites=overwrites)
+        except discord.Forbidden:
+            pass
         edit_view = View()
         edit_view.add_item(CancelButton())
         await interaction.message.edit(content="Cílový kanál nastaven na {0}, napiš zprávu:".format(self.values[0]),
@@ -52,19 +55,17 @@ class HiddenChannelMessageView(View):
         self.add_item(CancelButton())
 
 
-class InitExchange(View):
+class InitExchange(Button):
     def __init__(self, config: ConfigParser, bot: discord.Bot) -> None:
-        super().__init__(timeout=None)
+        super().__init__(style=ButtonStyle.primary,
+                         label="Let's go leak something",
+                         custom_id="init_exchange")
         self.hidden_category_id: int = config.getint("Anonymizer", "hiddenCategoryId")
         self.study_category_id: int = config.getint("Anonymizer", "studyCategoryId")
         self.welcome_channel_id: int = config.getint("Global", "welcomeChannelId")
         self.bot = bot
 
-    @button(
-        style=ButtonStyle.primary,
-        label="Let's go leak something",
-        custom_id="init_exchange")
-    async def callback(self, but: Button, interaction: discord.Interaction) -> None:
+    async def callback(self, interaction: discord.Interaction) -> None:
         channel_list = [channel for channel in await interaction.guild.fetch_channels()
                         if channel.category_id == self.hidden_category_id
                         and interaction.user in channel.members]
@@ -73,7 +74,6 @@ class InitExchange(View):
         if len(channel_list) == 0:
             overwrites = {
                 interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
-                self.bot.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
                 interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=False)
             }
             new_channel = await interaction.guild.create_text_channel(

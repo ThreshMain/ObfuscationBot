@@ -20,9 +20,8 @@ config.read("config.ini", "utf-8")
 
 
 def create_welcome_embed() -> discord.Embed:
-    welcome_embed: discord.Embed = discord.Embed(colour=discord.Color.orange())
+    welcome_embed: discord.Embed = discord.Embed(colour=discord.Color.green())
     welcome_embed.title = "Obfuscation bot"
-    welcome_embed.url = config.get("Global", "sourceLink")
     welcome_embed.description = "Ahoj, tenhle bot slouží k naplnění různorodých náročných požadavků Lomohova na " \
                                 "kvalitu tohoto serveru." \
                                 "\n\nAktivní moduly:"
@@ -30,8 +29,8 @@ def create_welcome_embed() -> discord.Embed:
     if config.getboolean("Anonymizer", "enabled"):
         welcome_embed.add_field(
             name="Anonymizer",
-            value="Přepošle anonymně zprávu. Mohou se přes to např. leakovat zadání. Což nepodporujeme. Samozřejmě. "
-                  "Ta feature tu je jen tak.",
+            value="Přepošle zprávu plně anonymně. Mohou se přes to např. leakovat zadání. Což nepodporujeme. "
+                  "Samozřejmě. Ta feature tu je jen tak. Výměnu zahájíte stisknutím tlačítka.",
             inline=False)
     if config.getboolean("Autopin", "enabled"):
         welcome_embed.add_field(
@@ -51,17 +50,19 @@ async def on_ready():
     channel: discord.TextChannel = \
         [channel for channel in await guild.fetch_channels() if
          channel.id == config.getint("Global", "welcomeChannelId")][0]
+    buttons = discord.ui.View(timeout=None)
+    if config.getboolean("Anonymizer", "enabled", fallback=False):
+        buttons.add_item(InitExchange(config, bot))
+    buttons.add_item(discord.ui.Button(label="Zdroják", url=config.get("Global", "sourcelink"), emoji="〽"))
     try:
         welcome_message: discord.Message = await channel.fetch_message(
             config.getint("Global", "welcomeMessageId", fallback=0))
         await welcome_message.edit(content="",
                                    embed=create_welcome_embed(),
-                                   view=InitExchange(config, bot)
-                                   if config.getboolean("Anonymizer", "enabled") else None)
+                                   view=buttons)
     except discord.NotFound:
         welcome_message = await channel.send(embed=create_welcome_embed(),
-                                             view=InitExchange(config, bot)
-                                             if config.getboolean("Anonymizer", "enabled") else None)
+                                             view=buttons)
         config["Global"]["welcomeMessageId"] = str(welcome_message.id)
         with open("config.ini", 'w', encoding='utf-8') as file:
             config.write(file)
